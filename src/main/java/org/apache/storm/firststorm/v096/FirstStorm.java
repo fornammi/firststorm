@@ -1,0 +1,35 @@
+package org.apache.storm.firststorm.v096;
+
+import backtype.storm.Config;
+import backtype.storm.LocalCluster;
+import backtype.storm.StormSubmitter;
+import backtype.storm.generated.AlreadyAliveException;
+import backtype.storm.generated.InvalidTopologyException;
+import backtype.storm.topology.TopologyBuilder;
+import backtype.storm.utils.Utils;
+
+public class FirstStorm {
+	public static void main(String[] args) {
+		TopologyBuilder builder = new TopologyBuilder();
+		builder.setSpout("spout", new RandomSpout());
+		builder.setBolt("bolt", new SequenceBolt()).shuffleGrouping("spout");
+		Config conf = new Config();
+		conf.setDebug(false);
+		if(args != null && args.length >0){
+			conf.setNumWorkers(3);
+			try{
+				StormSubmitter.submitTopology(args[0], conf, builder.createTopology());
+			}catch(AlreadyAliveException e){
+				e.printStackTrace();
+			}catch(InvalidTopologyException e){
+				e.printStackTrace();
+			}
+		}else{
+			LocalCluster cluster = new LocalCluster();
+			cluster.submitTopology("firstStorm", conf, builder.createTopology());
+			Utils.sleep(30000);
+			cluster.killTopology("firstStorm");
+			cluster.shutdown();
+		}
+	}
+}
